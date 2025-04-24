@@ -1,0 +1,434 @@
+# About Data Analysis Report
+
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains analysis such as data exploration, summary statistics and building the prediction models. The final report was completed on `r date()`. 
+
+**Data Description:**
+
+According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
+
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
+
+
+# Task One: Import data and data preprocessing
+
+## Load data and install packages
+
+```{r setup, message=FALSE, warning=FALSE}
+# Load libraries
+library(tidyverse)
+library(tidymodels)
+library(caret)
+library(pROC)
+library(randomForest)
+library(e1071)
+library(xgboost)
+library(rpart)
+library(rpart.plot)
+library(workflows)
+library(recipes)
+library(ggplot2)
+library(mice)
+library(reshape2)
+library(kernlab)
+library(yardstick)
+library(knitr)
+
+# Load the stroke dataset
+stroke_data <- read.csv("C:/Users/manav/OneDrive - MSFT/Desktop/Personal/Project/stroke predictor/healthcare-dataset-stroke-data.csv") %>%
+  select(-id) %>%
+  mutate(
+    stroke = factor(stroke, levels = c(0, 1), labels = c("No", "Yes")),
+    gender = factor(gender),
+    hypertension = factor(hypertension, levels = c(0, 1), labels = c("No", "Yes")),
+    heart_disease = factor(heart_disease, levels = c(0, 1), labels = c("No", "Yes")),
+    ever_married = factor(ever_married),
+    work_type = factor(work_type),
+    Residence_type = factor(Residence_type),
+    smoking_status = factor(smoking_status),
+    bmi = as.numeric(ifelse(bmi == "N/A", NA, bmi))
+  ) %>%
+  mutate(bmi = ifelse(is.na(bmi), median(bmi, na.rm = TRUE), bmi))
+
+# Summarize the data
+summary(stroke_data)
+```
+
+
+```{r}
+# Handle Missing bmi Values
+stroke_data$bmi <- ifelse(is.na(stroke_data$bmi), median(stroke_data$bmi, na.rm = TRUE), stroke_data$bmi)
+```
+
+
+```{r}
+# Check correlations to understand the relationships between numeric variables
+cor_matrix <- cor(stroke_data %>%
+  select(age, avg_glucose_level, bmi), use = "complete.obs")
+
+# Print the correlation matrix
+print(cor_matrix)
+
+# # Correlation heatmap
+# melted_cor <- melt(cor_matrix)
+# ggplot(data = melted_cor, aes(Var1, Var2, fill = value)) +
+#   geom_tile() +
+#   scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+#   labs(title = "Correlation Heatmap") +
+#   theme_minimal()
+
+# # Check Correlations to understand the relationships between numeric variables and detect multicollinearity
+# cor_matrix <- cor(stroke_data %>% 
+#                             select(age, avg_glucose_level, bmi), use = "complete.obs")
+# print(cor_matrix)
+```
+
+
+
+
+## Describe and explore the data
+
+```{r, message=FALSE, warning=FALSE}
+# Structure of the dataset
+str(stroke_data)
+
+# Summary statistics of numeric variables
+summary(stroke_data)
+
+# Check for missing values
+colSums(is.na(stroke_data))
+
+# Class distribution
+stroke_data %>%
+  count(stroke) %>%
+  ggplot(aes(x = stroke, fill = stroke)) +
+  geom_bar() +
+  labs(title = "Class Distribution", y = "Count") +
+  theme_minimal()
+
+# Correlation heatmap
+cor_matrix <- cor(stroke_data %>%
+  select(age, avg_glucose_level, bmi), use = "complete.obs")
+melted_cor <- melt(cor_matrix)
+ggplot(data = melted_cor, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+  labs(title = "Correlation Heatmap") +
+  theme_minimal()
+
+# Numeric Variables by Stroke
+ggplot(stroke_data, aes(x = bmi, fill = stroke)) +
+  geom_histogram(bins = 30, position = "dodge") +
+  theme_minimal() +
+  labs(title = "Distribution of BMI by Stroke")
+
+# Categorical Variables by stroke
+ggplot(stroke_data, aes(x = gender, fill = stroke)) +
+  geom_bar(position = "dodge") +
+  theme_minimal() +
+  labs(title = "Gender Distribution by Stroke")
+
+
+# Class Distribution
+# Stroke class distribution
+stroke_data %>%
+  count(stroke) %>%
+  mutate(percent = n / sum(n) * 100)
+
+# Bar plot of stroke distribution
+ggplot(stroke_data, aes(x = stroke, fill = stroke)) +
+  geom_bar() +
+  labs(title = "Stroke Class Distribution", y = "Count") +
+  theme_minimal()
+
+## Numerical variables
+
+# Summary Statistics
+stroke_data %>%
+  select(age, avg_glucose_level, bmi) %>%
+  summary()
+
+stroke_data %>%
+  select(age, avg_glucose_level, bmi) %>%
+  summary()
+
+# Distribution of Age
+ggplot(stroke_data, aes(x = age, fill = stroke)) +
+  geom_histogram(bins = 30, position = "dodge") +
+  labs(title = "Age Distribution by Stroke", x = "Age") +
+  theme_minimal()
+
+# Distribution of Average Glucose Level
+ggplot(stroke_data, aes(x = avg_glucose_level, fill = stroke)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Average Glucose Level Distribution by Stroke", x = "Avg Glucose Level") +
+  theme_minimal()
+
+# Distribution of BMI
+ggplot(stroke_data, aes(x = bmi, fill = stroke)) +
+  geom_histogram(bins = 30, position = "dodge") +
+  theme_minimal() +
+  labs(title = "Distribution of BMI by Stroke")
+
+
+# Exploratory Data Visualization
+
+## Categorical Variables
+
+stroke_data %>%
+  count(gender, stroke) %>%
+  ggplot(aes(x = gender, fill = stroke)) +
+  geom_bar(position = "fill") +
+  labs(title = "Gender Distribution by Stroke", y = "Proportion") +
+  theme_minimal()
+
+stroke_data %>%
+  count(work_type, stroke) %>%
+  ggplot(aes(x = work_type, fill = stroke)) +
+  geom_bar(position = "fill") +
+  labs(title = "Work Type Distribution by Stroke", y = "Proportion") +
+  theme_minimal()
+
+# Variables relationship
+# Correlation matrix
+cor_matrix <- stroke_data %>%
+  select(age, avg_glucose_level, bmi) %>%
+  cor(use = "complete.obs")
+
+print(cor_matrix)
+
+# Correlation heatmap
+melted_cor <- melt(cor_matrix)
+ggplot(data = melted_cor, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+  labs(title = "Correlation Matrix") +
+  theme_minimal()
+
+# Outlier Detection
+# Boxplots for numeric variables
+stroke_data %>%
+  select(age, avg_glucose_level, bmi) %>%
+  gather(key = "Variable", value = "Value") %>%
+  ggplot(aes(x = Variable, y = Value, fill = Variable)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Boxplots of Numeric Variables")
+
+
+# Bivariate Relationships
+# Relationship between Age and Stroke
+ggplot(stroke_data, aes(x = age, y = avg_glucose_level, color = stroke)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Age vs. Avg Glucose Level by Stroke", x = "Age", y = "Avg Glucose Level") +
+  theme_minimal()
+```
+
+
+# Task Two: Build prediction models. 
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Split the data into 75/25 for training and testing sets
+split_data <- initial_split(stroke_data, prop = 0.75)
+train_data <- training(split_data)
+test_data <- testing(split_data)
+```
+
+
+```{r}
+# Logistic Regression
+log_spec <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+# Random Forest
+rf_spec <- rand_forest(mtry = 3, trees = 500, min_n = 10) %>%
+  set_engine("ranger") %>%
+  set_mode("classification")
+
+# Support Vector Machine
+svm_spec <- svm_poly(degree = 3, cost = 1) %>%
+  set_engine("kernlab") %>%
+  set_mode("classification")
+
+# Decision Tree
+tree_spec <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+# XGBoost
+xgb_spec <- boost_tree() %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+
+
+# Create a preprocessing recipe
+model_recipe <- recipe(stroke ~ age + avg_glucose_level + bmi + gender + hypertension + 
+                         heart_disease + ever_married + work_type + Residence_type + smoking_status, 
+                       data = train_data) %>%
+  step_dummy(all_nominal_predictors()) %>%  # Convert categorical variables to numeric
+  step_normalize(all_numeric_predictors()) # Normalize numeric variables
+```
+
+# Task Three: Evaluate and select prediction models
+
+```{r}
+# Train models
+models <- list(
+  Logistic_Regression = workflow() %>%
+    add_recipe(model_recipe) %>%
+    add_model(log_spec) %>%
+    fit(data = train_data),
+  Random_Forest = workflow() %>%
+    add_recipe(model_recipe) %>%
+    add_model(rf_spec) %>%
+    fit(data = train_data),
+  Support_Vector_Machine = workflow() %>%
+    add_recipe(model_recipe) %>%
+    add_model(svm_spec) %>%
+    fit(data = train_data),
+  Decision_Tree = workflow() %>%
+    add_recipe(model_recipe) %>%
+    add_model(tree_spec) %>%
+    fit(data = train_data),
+  XGBoost = workflow() %>%
+    add_recipe(model_recipe) %>%
+    add_model(xgb_spec) %>%
+    fit(data = train_data)
+)
+
+# Updated Evaluation Function
+evaluation_metrics <- function(model, test_data) {
+  # Generate predictions
+  predictions <- predict(model, test_data, type = "prob") %>%
+    bind_cols(predict(model, test_data)) %>%
+    bind_cols(test_data)
+  
+  # Ensure predictions include the necessary columns
+  if (!all(c(".pred_class", ".pred_Yes") %in% colnames(predictions))) {
+    stop("Predictions do not include required columns.")
+  }
+  
+  # Confusion Matrix
+  conf_matrix <- tryCatch(
+    conf_mat(predictions, truth = stroke, estimate = .pred_class),
+    error = function(e) {
+      warning("Error in creating confusion matrix: ", conditionMessage(e))
+      NULL
+    }
+  )
+  
+  # Metrics: Accuracy, ROC AUC, Precision, Recall, F1-score
+  metrics <- tryCatch(
+    {
+      metrics(predictions, truth = stroke, estimate = .pred_class) %>%
+        bind_rows(
+          roc_auc(predictions, truth = stroke, .pred_Yes),
+          yardstick::precision(predictions, truth = stroke, estimate = .pred_class),
+          yardstick::recall(predictions, truth = stroke, estimate = .pred_class),
+          yardstick::f_meas(predictions, truth = stroke, estimate = .pred_class)
+        )
+    },
+    error = function(e) {
+      warning("Error in calculating metrics: ", conditionMessage(e))
+      NULL
+    }
+  )
+  
+  list(
+    metrics = metrics,
+    confusion_matrix = conf_matrix
+  )
+}
+
+# Evaluate all models
+results <- lapply(models, function(model) {
+  tryCatch(
+    evaluation_metrics(model, test_data = test_data),
+    error = function(e) {
+      warning("Error in model evaluation: ", conditionMessage(e))
+      NULL
+    }
+  )
+})
+names(results) <- names(models)
+
+# Check for NULL entries in results
+if (any(sapply(results, is.null))) {
+  warning("Some models failed during evaluation.")
+}
+
+# Extract evaluation metrics
+evaluation_results <- bind_rows(
+  lapply(results, function(x) if (!is.null(x)) x$metrics else NULL),
+  .id = "Model"
+)
+
+# Extract confusion matrices
+confusion_matrices <- lapply(results, function(x) if (!is.null(x)) x$confusion_matrix else NULL)
+
+# Check if confusion matrices were created successfully
+if (any(sapply(confusion_matrices, is.null))) {
+  warning("Some confusion matrices could not be created.")
+}
+```
+
+
+```{r}
+# View metrics for all models
+#print(evaluation_results)
+kable(evaluation_results,
+      col.names = c("Model", "Metric", "Estimator", "Estimate"))
+
+# View confusion matrix for each model
+print(confusion_matrices$Logistic_Regression)
+print(confusion_matrices$Random_Forest)
+print(confusion_matrices$Support_Vector_Machine)
+print(confusion_matrices$Decision_Tree)
+print(confusion_matrices$XGBoost)
+```
+
+
+
+# Task Four: Deploy the prediction model
+
+**Note:** The Stroke Prediction will be deploy using R Shiny. The code below will prepare and save the Logistic Regression Model and Random Forest Model to be deploy using R Shiny.  
+
+```{r}
+# Save models to files
+saveRDS(models$Logistic_Regression, "logistic_regression_model.rds")
+saveRDS(models$Random_Forest, "random_forest_model.rds")
+saveRDS(models$Support_Vector_Machine, "support_vector_machine_model.rds")  # Corrected model name
+saveRDS(models$Decision_Tree, "decision_tree_model.rds")
+saveRDS(models$XGBoost, "xgboost_model.rds")
+
+# Save evaluation metrics to a CSV file
+write.csv(evaluation_results, "evaluation_metrics.csv", row.names = FALSE)
+
+# Save confusion matrices to a file
+saveRDS(confusion_matrices, "confusion_matrices.rds")
+
+# Save predictions to a file
+predictions <- lapply(models, function(model) {
+  tryCatch(
+    {
+      predict(model, test_data, type = "prob") %>%
+        bind_cols(predict(model, test_data)) %>%
+        bind_cols(test_data)
+    },
+    error = function(e) {
+      warning("Error in generating predictions for a model: ", conditionMessage(e))
+      NULL
+    }
+  )
+})
+names(predictions) <- names(models)
+
+# Remove NULL predictions (if any)
+predictions <- predictions[!sapply(predictions, is.null)]
+
+saveRDS(predictions, "model_predictions.rds")
+```
+

@@ -1,0 +1,6 @@
+"0",""
+"0","# Numeric Variables by Stroke"
+"0","ggplot(stroke_data, aes(x = bmi, fill = stroke)) +"
+"0","  geom_histogram(bins = 30, position = ""dodge"") +"
+"0","  theme_minimal() +"
+"0","  labs(title = ""Distribution of BMI by Stroke"")"

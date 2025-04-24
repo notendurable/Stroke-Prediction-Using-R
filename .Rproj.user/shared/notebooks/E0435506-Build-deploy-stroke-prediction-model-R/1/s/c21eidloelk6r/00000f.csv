@@ -1,0 +1,7 @@
+"0","# Set seed for reproducibility"
+"0","set.seed(123)"
+"0",""
+"0","# Split the data into 75/25 for training and testing sets"
+"0","split_data <- initial_split(stroke_data, prop = 0.75)"
+"0","train_data <- training(split_data)"
+"0","test_data <- testing(split_data)"

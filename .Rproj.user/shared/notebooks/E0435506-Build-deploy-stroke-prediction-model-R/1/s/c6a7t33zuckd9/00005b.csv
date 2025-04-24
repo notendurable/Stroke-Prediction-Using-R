@@ -1,0 +1,7 @@
+"0",""
+"0","stroke_data %>%"
+"0","  count(work_type, stroke) %>%"
+"0","  ggplot(aes(x = work_type, fill = stroke)) +"
+"0","  geom_bar(position = ""fill"") +"
+"0","  labs(title = ""Work Type Distribution by Stroke"", y = ""Proportion"") +"
+"0","  theme_minimal()"

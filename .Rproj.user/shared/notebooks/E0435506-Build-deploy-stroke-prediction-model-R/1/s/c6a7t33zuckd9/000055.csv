@@ -1,0 +1,6 @@
+"0",""
+"0","# Distribution of Average Glucose Level"
+"0","ggplot(stroke_data, aes(x = avg_glucose_level, fill = stroke)) +"
+"0","  geom_density(alpha = 0.5) +"
+"0","  labs(title = ""Average Glucose Level Distribution by Stroke"", x = ""Avg Glucose Level"") +"
+"0","  theme_minimal()"

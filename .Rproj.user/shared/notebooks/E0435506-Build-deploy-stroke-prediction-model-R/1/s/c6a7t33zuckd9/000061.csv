@@ -1,0 +1,8 @@
+"0",""
+"0",""
+"0","# Bivariate Relationships"
+"0","# Relationship between Age and Stroke"
+"0","ggplot(stroke_data, aes(x = age, y = avg_glucose_level, color = stroke)) +"
+"0","  geom_point(alpha = 0.7) +"
+"0","  labs(title = ""Age vs. Avg Glucose Level by Stroke"", x = ""Age"", y = ""Avg Glucose Level"") +"
+"0","  theme_minimal()"

@@ -1,0 +1,15 @@
+R.version
+R.version
+packageVersion()
+installed.packages()
+install.packages(tidyverse)
+install.packages("ggplot2")
+install.packages("tidyverse")
+install.packages("naniar","caTools","superheat","scatterplot3d", "ROCR")
+installed.packages()
+shiny::runApp()
+R.version
+# Load libraries
+library(tidyverse)
+library(tidymodels)
+install.packages("tidymodels")

@@ -1,0 +1,7 @@
+"0",""
+"0",""
+"0","# Class Distribution"
+"0","# Stroke class distribution"
+"0","stroke_data %>%"
+"0","  count(stroke) %>%"
+"0","  mutate(percent = n / sum(n) * 100)"

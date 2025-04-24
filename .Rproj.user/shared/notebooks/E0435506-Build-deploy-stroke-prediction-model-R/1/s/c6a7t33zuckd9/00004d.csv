@@ -1,0 +1,6 @@
+"0",""
+"0","# Categorical Variables by stroke"
+"0","ggplot(stroke_data, aes(x = gender, fill = stroke)) +"
+"0","  geom_bar(position = ""dodge"") +"
+"0","  theme_minimal() +"
+"0","  labs(title = ""Gender Distribution by Stroke"")"

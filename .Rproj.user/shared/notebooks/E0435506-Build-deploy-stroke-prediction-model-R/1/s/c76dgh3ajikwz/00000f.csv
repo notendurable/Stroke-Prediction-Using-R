@@ -1,0 +1,2 @@
+"0","# Handle Missing bmi Values"
+"0","stroke_data$bmi <- ifelse(is.na(stroke_data$bmi), median(stroke_data$bmi, na.rm = TRUE), stroke_data$bmi)"

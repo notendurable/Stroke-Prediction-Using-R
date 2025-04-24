@@ -1,0 +1,6 @@
+"0",""
+"0","# Bar plot of stroke distribution"
+"0","ggplot(stroke_data, aes(x = stroke, fill = stroke)) +"
+"0","  geom_bar() +"
+"0","  labs(title = ""Stroke Class Distribution"", y = ""Count"") +"
+"0","  theme_minimal()"
